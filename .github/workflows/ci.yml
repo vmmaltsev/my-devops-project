@@ -8,6 +8,11 @@ on:
 jobs:
   build-test-sast:
     runs-on: ubuntu-latest
+    permissions:            # Добавляем нужные разрешения
+      security-events: write
+      actions: read
+      contents: read
+
     steps:
       - uses: actions/checkout@v3
 
@@ -19,13 +24,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r app/requirements.txt
 
-      # Запускаем приложение перед тестами
       - name: Start application
         run: |
           uvicorn app.src.main:app --host 0.0.0.0 --port 8000 &
-          sleep 5  # Даем время на запуск сервера
+          sleep 5
 
-      # Запускаем тесты после запуска приложения
       - name: Run tests
         run: pytest app/tests/
 
