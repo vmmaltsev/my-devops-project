@@ -13,6 +13,11 @@ jobs:
       actions: read
       contents: read
 
+    env:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      COVERAGE_PATH: htmlcov/
+
     steps:
       - uses: actions/checkout@v3
 
@@ -21,22 +26,52 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('app/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: pip install -r app/requirements.txt
 
       - name: Start application
         run: |
-          uvicorn app.src.main:app --host 0.0.0.0 --port 8000 &
+          uvicorn app.src.main:app --host $APP_HOST --port $APP_PORT &
           sleep 5
 
+      - name: Check application health
+        run: |
+          curl --retry 5 --retry-delay 3 --retry-connrefused http://localhost:$APP_PORT/health
+
       - name: Run tests with coverage
-        run: pytest app/tests/ --cov=app --cov-report=html --cov-report=term
+        run: pytest app/tests/ --cov=app --cov-report=html --cov-report=term --log-file=pytest.log
+
+      - name: Upload pytest logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-logs
+          path: pytest.log
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
-          path: htmlcov/
+          path: $COVERAGE_PATH
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
 
       - name: Build Docker image
-        run: docker build -t myapp:latest app/
+        run: |
+          docker build --cache-from=type=local,src=/tmp/.buildx-cache \
+                       --cache-to=type=local,dest=/tmp/.buildx-cache \
+                       -t myapp:latest app/
