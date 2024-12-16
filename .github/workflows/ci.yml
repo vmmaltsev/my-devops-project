@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build-test:
@@ -19,15 +20,22 @@ jobs:
       COVERAGE_PATH: htmlcov/
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r app/requirements.txt
+        run: |
+          if [ -f app/requirements.txt ]; then
+            pip install -r app/requirements.txt
+          else
+            echo "Requirements file not found!"
+            exit 1
+          fi
 
       - name: Start application
         run: |
@@ -36,7 +44,10 @@ jobs:
 
       - name: Check application health
         run: |
-          curl --retry 5 --retry-delay 3 --retry-connrefused http://localhost:$APP_PORT/health
+          curl --retry 5 --retry-delay 3 --retry-connrefused http://localhost:$APP_PORT/health || {
+            echo "Application health check failed!";
+            exit 1;
+          }
 
       - name: Run tests with coverage
         run: |
@@ -51,7 +62,7 @@ jobs:
             exit 1
           fi
 
-      - name: List files in workspace (debug)
+      - name: List workspace contents (for debugging)
         run: ls -al ${{ github.workspace }}
 
       - name: Upload pytest logs on failure
@@ -74,4 +85,6 @@ jobs:
         run: |
           docker buildx build --cache-from=type=local,src=/tmp/.buildx-cache \
                               --cache-to=type=local,dest=/tmp/.buildx-cache \
-                              -t myapp:latest app/
+                              -t myapp:latest \
+                              -t myapp:${{ github.sha }} \
+                              app/
