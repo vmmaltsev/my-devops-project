@@ -39,7 +39,20 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-connrefused http://localhost:$APP_PORT/health
 
       - name: Run tests with coverage
-        run: pytest app/tests/ --cov=app --cov-report=html --cov-report=term --log-file=pytest.log
+        run: |
+          pytest app/tests/ --cov=app --cov-report=html:${{ github.workspace }}/$COVERAGE_PATH --cov-report=term --log-file=pytest.log
+
+      - name: Verify coverage report exists
+        run: |
+          if [ -d "${{ github.workspace }}/$COVERAGE_PATH" ]; then
+            echo "Coverage report found."
+          else
+            echo "Coverage report not found!"
+            exit 1
+          fi
+
+      - name: List files in workspace (debug)
+        run: ls -al ${{ github.workspace }}
 
       - name: Upload pytest logs on failure
         if: failure()
@@ -52,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
-          path: $COVERAGE_PATH
+          path: ${{ github.workspace }}/$COVERAGE_PATH
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
