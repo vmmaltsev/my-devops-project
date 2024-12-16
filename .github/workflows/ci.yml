@@ -19,6 +19,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r app/requirements.txt
 
+      # Запускаем приложение перед тестами
+      - name: Start application
+        run: |
+          uvicorn app.src.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5  # Даем время на запуск сервера
+
+      # Запускаем тесты после запуска приложения
       - name: Run tests
         run: pytest app/tests/
 
@@ -29,5 +36,6 @@ jobs:
         uses: github/codeql-action/init@v2
         with:
           languages: python
+
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v2
