@@ -8,7 +8,7 @@ on:
 jobs:
   build-test-sast:
     runs-on: ubuntu-latest
-    permissions:            # Добавляем нужные разрешения
+    permissions:
       security-events: write
       actions: read
       contents: read
@@ -36,9 +36,9 @@ jobs:
         run: docker build -t myapp:latest app/
 
       - name: CodeQL init
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: python
 
       - name: CodeQL analyze
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
