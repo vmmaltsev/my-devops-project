@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test-sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt
+
+      - name: Run tests
+        run: pytest app/tests/
+
+      - name: Build Docker image
+        run: docker build -t myapp:latest app/
+
+      - name: CodeQL init
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+      - name: CodeQL analyze
+        uses: github/codeql-action/analyze@v2

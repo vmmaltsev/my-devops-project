@@ -1,0 +1,27 @@
+# Виртуальное окружение
+venv/
+
+# Кэш-файлы Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest кэш
+.pytest_cache/
+
+# Логи и временные файлы
+*.log
+*.tmp
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker артефакты
+*.tar
+
+# Исключить рабочие файлы IDE
+.vscode/
+.idea/
